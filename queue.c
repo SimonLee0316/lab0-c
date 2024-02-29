@@ -31,8 +31,8 @@ void q_free(struct list_head *head)
     struct list_head *current = head->next;
 
     while (head != current) {
-        q_release_element(container_of(current, element_t, list));
         current = current->next;
+        q_release_element(container_of(current->prev, element_t, list));
     }
 
     free(head);
@@ -48,12 +48,13 @@ bool q_insert_head(struct list_head *head, char *s)
     if (!new)
         return false;
 
-    char *c = strdup(s);
-    if (!c) {
-        free(new);
+    int len = strlen(s);
+    new->value = malloc(sizeof(char) * len + 1);
+    if (!new->value) {
+        q_release_element(new);
         return false;
     }
-    new->value = c;
+    strncpy(new->value, s, len + 1);
     list_add(&new->list, head);
 
     return true;
@@ -69,12 +70,13 @@ bool q_insert_tail(struct list_head *head, char *s)
     if (!new)
         return false;
 
-    char *c = strdup(s);
-    if (!c) {
-        free(new);
+    int len = strlen(s);
+    new->value = malloc(sizeof(char) * len + 1);
+    if (!new->value) {
+        q_release_element(new);
         return false;
     }
-    new->value = c;
+    strncpy(new->value, s, len + 1);
     list_add_tail(&new->list, head);
 
     return true;
@@ -83,14 +85,15 @@ bool q_insert_tail(struct list_head *head, char *s)
 /* Remove an element from head of queue */
 element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 {
-    if (!head)
+    if (!head || q_size(head) == 0)
         return NULL;
     element_t *felement = list_first_entry(head, element_t, list);
     list_del_init(head->next);
 
-    if (!sp)
-        return NULL;
-    strncpy(sp, felement->value, bufsize);
+    if (sp) {
+        strncpy(sp, felement->value, bufsize - 1);
+        *(sp + bufsize - 1) = '\0';
+    }
 
     return felement;
 }
@@ -98,12 +101,18 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 /* Remove an element from tail of queue */
 element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 {
-    element_t *Lastelement = list_last_entry(head, element_t, list);
-    list_del(head->prev);
-
-    if (!sp)
+    if (!head || q_size(head) == 0)
         return NULL;
-    strncpy(sp, Lastelement->value, bufsize);
+    element_t *Lastelement = list_last_entry(head, element_t, list);
+    list_del_init(head->prev);
+
+    if (!Lastelement)
+        return NULL;
+
+    if (sp) {
+        strncpy(sp, Lastelement->value, bufsize - 1);
+        *(sp + bufsize - 1) = '\0';
+    }
     return Lastelement;
 }
 
@@ -137,7 +146,7 @@ bool q_delete_mid(struct list_head *head)
 
     struct list_head *mid = slow->next;
 
-    list_del(mid);
+    list_del_init(mid);
     q_release_element(container_of(mid, element_t, list));
 
     return true;
