@@ -245,8 +245,95 @@ void q_reverseK(struct list_head *head, int k)
     }
 }
 
+struct list_head *merge(struct list_head *left, struct list_head *right)
+{
+    struct list_head *dummy = left;
+    struct list_head *tail = dummy;
+    bool count = false;
+    while (left && right) {
+        if (strcmp(list_entry(left, element_t, list)->value,
+                   list_entry(right, element_t, list)->value) > 0) {
+            struct list_head *next_right = right->next;
+            if (!count) {
+                count = true;
+                dummy = right;
+                tail = right;
+                right->next = left;
+                right = next_right;
+                continue;
+            }
+
+            right->next = left;
+            tail->next = right;
+
+            tail = right;
+            right = next_right;
+        } else if (strcmp(list_entry(left, element_t, list)->value,
+                          list_entry(right, element_t, list)->value) <= 0) {
+            if (!count) {
+                count = true;
+                dummy = left;
+                tail = left;
+                left = left->next;
+                continue;
+            }
+            tail->next = left;
+            tail = left;
+            left = left->next;
+        }
+    }
+
+    if (right)
+        tail->next = right;
+    else
+        tail->next = left;
+
+    return dummy;
+}
+
+
+struct list_head *merge_sort(struct list_head *head)
+{
+    if (!head || !head->next)
+        return head;
+
+    struct list_head *slow = head;
+
+    for (struct list_head *fast = head->next; fast && fast->next;
+         fast = fast->next->next) {
+        slow = slow->next;
+    }
+    struct list_head *left;
+    struct list_head *right = slow->next;
+
+    slow->next = NULL;
+
+    left = merge_sort(head);
+    right = merge_sort(right);
+
+    return merge(left, right);
+}
+
 /* Sort elements of queue in ascending/descending order */
-void q_sort(struct list_head *head, bool descend) {}
+void q_sort(struct list_head *head, bool descend)
+{
+    if (!head || list_empty(head) || q_size(head) < 2)
+        return;
+
+    head->prev->next = NULL;
+    head->next = merge_sort(head->next);
+
+
+    struct list_head *current = head, *after = head->next;
+
+    while (after) {
+        after->prev = current;
+        current = after;
+        after = after->next;
+    }
+    current->next = head;
+    head->prev = current;
+}
 
 /* Remove every node which has a node with a strictly less value anywhere to
  * the right side of it */
