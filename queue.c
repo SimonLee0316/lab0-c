@@ -333,6 +333,8 @@ void q_sort(struct list_head *head, bool descend)
     }
     current->next = head;
     head->prev = current;
+    if (descend)
+        q_reverse(head);
 }
 
 /* Remove every node which has a node with a strictly less value anywhere to
