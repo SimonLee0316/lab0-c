@@ -43,6 +43,7 @@ extern int show_entropy;
  * solution code
  */
 #include "queue.h"
+bool q_shuffle(struct list_head *head);
 
 #include "console.h"
 #include "report.h"
@@ -1012,6 +1013,25 @@ static bool do_next(int argc, char *argv[])
     return q_show(0);
 }
 
+static bool do_shuffle(int argc, char *argv[])
+{
+    if (argc != 1) {
+        report(1, "%s takes no arguments", argv[0]);
+        return false;
+    }
+    if (!current) {
+        report(3, "Warning: Try to operate null queue");
+        return false;
+    }
+    if (exception_setup(true))
+        q_shuffle(current->q);
+    exception_cancel();
+
+    q_show(0);
+    return !error_check();
+}
+
+
 static void console_init()
 {
     ADD_COMMAND(new, "Create new queue", "");
@@ -1052,6 +1072,7 @@ static void console_init()
                 "");
     ADD_COMMAND(reverseK, "Reverse the nodes of the queue 'K' at a time",
                 "[K]");
+    ADD_COMMAND(shuffle, "Shuffle the queue by using Fisher–Yates shuffle", "");
     add_param("length", &string_length, "Maximum length of displayed string",
               NULL);
     add_param("malloc", &fail_probability, "Malloc failure probability percent",

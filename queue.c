@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "queue.h"
 
@@ -425,4 +426,31 @@ int q_merge(struct list_head *head, bool descend)
     start->q->prev = current;
 
     return q_size(start->q);
+}
+
+void swap(struct list_head *a, struct list_head *b)
+{
+    char *tmp;
+    tmp = list_entry(a, element_t, list)->value;
+
+    list_entry(a, element_t, list)->value =
+        list_entry(b, element_t, list)->value;
+    list_entry(b, element_t, list)->value = tmp;
+}
+bool q_shuffle(struct list_head *head)
+{
+    struct list_head *tail = head->prev;
+    struct list_head *current = head->next;
+    srand(time(NULL));
+
+    for (int i = q_size(head); i > 0; i--) {
+        int rand_number = rand() % (i);
+        for (int j = 1; j < rand_number; j++) {
+            current = current->next;
+        }
+        swap(current, tail);
+        tail = tail->prev;
+    }
+
+    return true;
 }
