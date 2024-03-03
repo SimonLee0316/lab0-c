@@ -1,7 +1,7 @@
+#include <random.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include "queue.h"
 
@@ -437,14 +437,23 @@ void swap(struct list_head *a, struct list_head *b)
         list_entry(b, element_t, list)->value;
     list_entry(b, element_t, list)->value = tmp;
 }
+
+/* Generate random number from 1 to k inclusive */
+static inline unsigned int get_random_range_1_to_k(unsigned int k)
+{
+    unsigned int rand_val = 0;
+    randombytes((uint8_t *) &rand_val, sizeof(rand_val));
+    return 1 + (rand_val % k);
+}
+
 bool q_shuffle(struct list_head *head)
 {
     struct list_head *tail = head->prev;
     struct list_head *current = head->next;
-    srand(time(NULL));
 
     for (int i = q_size(head); i > 0; i--) {
-        int rand_number = rand() % (i);
+        int rand_number = get_random_range_1_to_k(i);
+        current = head->next;
         for (int j = 1; j < rand_number; j++) {
             current = current->next;
         }
