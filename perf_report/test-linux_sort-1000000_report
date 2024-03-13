@@ -1,0 +1,14 @@
+# started on Wed Mar 13 06:58:29 2024
+
+
+ Performance counter stats for './qtest -f ./perf_test/test-linux_sort-1000000.cmd' (5 runs):
+
+         9498,7683      cache-misses                     #   54.93% of all cache refs           ( +-  1.29% )
+       6,9274,1914      branches                                                                ( +-  0.07% )
+      47,6613,4198      instructions                     #    0.77  insn per cycle              ( +-  0.07% )
+                13      context-switches                                                        ( +- 78.47% )
+       1,7293,1637      cache-references                                                        ( +-  0.06% )
+      61,9080,6468      cycles                                                                  ( +-  1.10% )
+
+            1.3338 +- 0.0193 seconds time elapsed  ( +-  1.45% )
+
