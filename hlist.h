@@ -26,8 +26,8 @@ extern "C" {
 #define __aligned(x) __attribute((__aligned__(x)))
 #endif
 
-#define LIST_POISON1 ((void *) 0x100)
-#define LIST_POISON2 ((void *) 0x122)
+#define LIST_POISON1 ((void *) 0x00100100)
+#define LIST_POISON2 ((void *) 0x00200200)
 
 /**
  * struct hlist_head - Head of a hash linked list
@@ -37,7 +37,7 @@ extern "C" {
  * leading to its own list. Utilizes hlist_* functions and macros for
  * manipulation. An empty list is indicated by @first being NULL.
  */
-struct hlist_node;
+// struct hlist_node;
 struct hlist_head {
     struct hlist_node *first;
 };
