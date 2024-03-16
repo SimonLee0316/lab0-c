@@ -29,6 +29,19 @@ extern "C" {
 #define LIST_POISON1 ((void *) 0x00100100)
 #define LIST_POISON2 ((void *) 0x00200200)
 
+#ifndef container_of
+#ifdef __HAVE_TYPEOF
+#define container_of(ptr, type, member)                            \
+    __extension__({                                                \
+        const __typeof__(((type *) 0)->member) *__pmember = (ptr); \
+        (type *) ((char *) __pmember - offsetof(type, member));    \
+    })
+#else
+#define container_of(ptr, type, member) \
+    ((type *) ((char *) (ptr) - (offsetof(type, member))))
+#endif
+#endif
+
 /**
  * struct hlist_head - Head of a hash linked list
  * @first: pointer to the first node in the list
@@ -290,9 +303,9 @@ static inline void hlist_splice_init(struct hlist_head *from,
  * @head:	the head for your list.
  * @member:	the name of the hlist_node within the struct.
  */
-#define hlist_for_each_entry(pos, head, member)                              \
-    for (pos = hlist_entry_safe((head)->first, typeof(*(pos)), member); pos; \
-         pos = hlist_entry_safe((pos)->member.next, typeof(*(pos)), member))
+#define hlist_for_each_entry(pos, head, member, type)              \
+    for (pos = hlist_entry_safe((head)->first, type, member); pos; \
+         pos = hlist_entry_safe((pos)->member.next, type, member))
 
 /**
  * hlist_for_each_entry_continue - iterate over a hlist continuing after current
