@@ -24,6 +24,8 @@
 #include "list.h"
 #include "random.h"
 
+#include "agents/mcts.h"
+
 /* Shannon entropy */
 extern double shannon_entropy(const uint8_t *input_data);
 extern int show_entropy;
@@ -41,6 +43,7 @@ extern int show_entropy;
 #else
 #include "agents/negamax.h"
 #endif
+static enum game_mode play_mode = PVE;
 
 /* What character limit will be used for displaying strings? */
 #define MAXSTRING 1024
@@ -1194,23 +1197,26 @@ static bool do_shuffle(int argc, char *argv[])
 
 static bool do_ttt(int argc, char *argv[])
 {
+    if (argc < 2) {
+        report(1, "%s takes no arguments", argv[0]);
+        return false;
+    } else if (argc == 2) {
+        if (!strcmp(argv[1], "EVE")) {
+            play_mode = EVE;
+        } else if (!strcmp(argv[1], "PVE")) {
+            play_mode = PVE;
+        } else {
+            report(1, "%s wrong arguments need PVE or EVE", argv[0]);
+            return false;
+        }
+    }
     srand(time(NULL));
     char table[N_GRIDS];
     memset(table, ' ', N_GRIDS);
     char turn = 'X';
     char ai = 'O';
+    char ai2 = 'X';
 
-#ifdef USE_RL
-    rl_agent_t agent;
-    unsigned int state_num = 1;
-    CALC_STATE_NUM(state_num);
-    init_rl_agent(&agent, state_num, 'O');
-    load_model(&agent, state_num, MODEL_NAME);
-#elif defined(USE_MCTS)
-    // A routine for initializing MCTS is not required.
-#else
-    negamax_init();
-#endif
     while (1) {
         char win = check_win(table);
         if (win == 'D') {
@@ -1224,38 +1230,37 @@ static bool do_ttt(int argc, char *argv[])
         }
 
         if (turn == ai) {
-#ifdef USE_RL
-            int move = play_rl(table, &agent);
-            record_move(move);
-#elif defined(USE_MCTS)
             int move = mcts(table, ai);
             if (move != -1) {
                 table[move] = ai;
                 record_move(move);
             }
-#else
-            int move = negamax_predict(table, ai).move;
-            if (move != -1) {
-                table[move] = ai;
-                record_move(move);
-            }
-#endif
+
         } else {
             draw_board(table);
-            int move;
-            while (1) {
-                move = get_input(turn);
-                if (table[move] == ' ') {
-                    break;
+            if (play_mode == EVE) {
+                int move = mcts(table, ai2);
+                if (move != -1) {
+                    table[move] = ai2;
+                    record_move(move);
                 }
-                printf("Invalid operation: the position has been marked\n");
+            } else {
+                int move;
+                while (1) {
+                    move = get_input(turn);
+                    if (table[move] == ' ') {
+                        break;
+                    }
+                    printf("Invalid operation: the position has been marked\n");
+                }
+                table[move] = turn;
+                record_move(move);
             }
-            table[move] = turn;
-            record_move(move);
         }
         turn = turn == 'X' ? 'O' : 'X';
     }
     print_moves();
+    move_count = 0;
     return 0;
 }
 

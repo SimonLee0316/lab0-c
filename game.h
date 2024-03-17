@@ -17,6 +17,8 @@ typedef struct {
     int i_lower_bound, j_lower_bound, i_upper_bound, j_upper_bound;
 } line_t;
 
+enum game_mode { PVE, EVE };
+
 extern const line_t lines[4];
 
 int *available_moves(const char *table);
