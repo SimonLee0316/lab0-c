@@ -1308,7 +1308,10 @@ static void console_init()
     ADD_COMMAND(reverseK, "Reverse the nodes of the queue 'K' at a time",
                 "[K]");
     ADD_COMMAND(shuffle, "Shuffle the queue by using Fisher–Yates shuffle", "");
-    ADD_COMMAND(ttt, "play tic tac toe", "");
+    ADD_COMMAND(ttt,
+                "type ttt + PVE to play tic tac toe with computer or type ttt "
+                "+ EVE to play tic tac toe between two computer",
+                "");
     add_param("length", &string_length, "Maximum length of displayed string",
               NULL);
     add_param("malloc", &fail_probability, "Malloc failure probability percent",
