@@ -1232,6 +1232,8 @@ static bool do_ttt(int argc, char *argv[])
     negamax_init();
 
     while (1) {
+        display_time();
+        draw_board(table);
         char win = check_win(table);
         if (win == 'D') {
             draw_board(table);
@@ -1251,8 +1253,6 @@ static bool do_ttt(int argc, char *argv[])
             }
 
         } else {
-            display_time();
-            draw_board(table);
             if (play_mode == EVE) {
                 int move = negamax_predict(table, ai2).move;
                 if (move != -1) {
