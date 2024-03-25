@@ -187,6 +187,16 @@ static int get_input(char player)
     free(line);
     return GET_INDEX(y, x);
 }
+
+void display_time()
+{
+    time_t current_time;
+    struct tm *timeinfo;
+    time(&current_time);
+    timeinfo = localtime(&current_time);
+
+    printf("Current time: %s\n", asctime(timeinfo));
+}
 /*end of function ttt*/
 
 /* Forward declarations */
@@ -1219,6 +1229,8 @@ static bool do_ttt(int argc, char *argv[])
     char ai = 'O';
     char ai2 = 'X';
 
+    negamax_init();
+
     while (1) {
         char win = check_win(table);
         if (win == 'D') {
@@ -1239,9 +1251,10 @@ static bool do_ttt(int argc, char *argv[])
             }
 
         } else {
+            display_time();
             draw_board(table);
             if (play_mode == EVE) {
-                int move = mcts(table, ai2);
+                int move = negamax_predict(table, ai2).move;
                 if (move != -1) {
                     table[move] = ai2;
                     record_move(move);
