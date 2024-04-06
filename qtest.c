@@ -35,6 +35,7 @@ extern int show_entropy;
 #include "harness.h"
 
 /*ttt implement*/
+#include "corottt.h"
 #include "game.h"
 #ifdef USE_RL
 #include "agents/reinforcement_learning.h"
@@ -198,6 +199,7 @@ void display_time()
     printf("Current time: %s\n", asctime(timeinfo));
 }
 /*end of function ttt*/
+
 
 /* Forward declarations */
 static bool q_show(int vlevel);
@@ -1207,6 +1209,26 @@ static bool do_shuffle(int argc, char *argv[])
     return !error_check();
 }
 
+static bool do_coro_ttt(int argc, char *argv[])
+{
+    if (argc > 2) {
+        printf("%s takes too much arguments\n", argv[0]);
+        return false;
+    }
+    int times = 1;
+    if (argc == 2) {
+        char *endptr;
+        times = strtol(argv[1], &endptr, 10);
+        if (*endptr != '\0') {
+            printf("%s takes error arguments %s\n", argv[0], argv[1]);
+            return false;
+        }
+    }
+
+    coro_ttt(times);
+    return 0;
+}
+
 static bool do_ttt(int argc, char *argv[])
 {
     if (argc < 2) {
@@ -1326,6 +1348,8 @@ static void console_init()
     ADD_COMMAND(ttt,
                 "type ttt + PVE to play tic tac toe with computer or type ttt "
                 "+ EVE to play tic tac toe between two computer",
+                "");
+    ADD_COMMAND(coro_ttt, "play tic tac tao between two computer use coroutine",
                 "");
     add_param("length", &string_length, "Maximum length of displayed string",
               NULL);

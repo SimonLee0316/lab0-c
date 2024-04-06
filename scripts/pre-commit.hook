@@ -16,6 +16,7 @@ CPPCHECK_suppresses="--inline-suppr harness.c \
 --suppress=nullPointerRedundantCheck:harness.c \
 --suppress=nullPointer:queue.c \
 --suppress=nullPointer:qtest.c \
+--suppress=nullPointer:corottt.c \
 --suppress=internalAstError:hlist.h \
 --suppress=variableScope:mt19937-64.c \
 --suppress=nullPointer:agents/mcts.c \
