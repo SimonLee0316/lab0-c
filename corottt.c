@@ -38,7 +38,7 @@ static int ntasks;
 static jmp_buf sched;
 static struct task *cur_task;
 static bool roundend = false;
-// static int rounds;
+static int rounds;
 static char table[N_GRIDS];
 
 static void record_move(int move)
@@ -68,7 +68,7 @@ static void task_switch()
 {
     if (!list_empty(&tasklist)) {
         struct task *t = list_first_entry(&tasklist, struct task, list);
-        // printf("taskswitch del:%s\n",t->task_name);
+        printf("taskswitch del:%s\n", t->task_name);
         list_del(&t->list);
         cur_task = t;
         longjmp(t->env, 1);
@@ -80,11 +80,12 @@ void schedule(void)
     static int i;
     // int j=0;
     setjmp(sched);
-
     while (ntasks-- > 0) {
         // printf("schetime %d ntasks:%d\n",j++,ntasks);
+        i = (i + 1) % 3;
+        printf("schedule i:%d\n", i);
         struct arg arg = args[i];
-        tasks[i++](&arg);
+        tasks[i](&arg);
         printf("Never reached\n");
     }
 
@@ -113,7 +114,7 @@ void task_ai1(void *arg)
     while (1) {
         if (setjmp(task->env) == 0) {
             if (roundend) {
-                longjmp(sched, 1);
+                break;
             }
             char win = check_win(table);
             if (win == 'D') {
@@ -164,7 +165,7 @@ void task_ai2(void *arg)
     while (1) {
         if (setjmp(task->env) == 0) {
             if (roundend) {
-                longjmp(sched, 1);
+                break;
             }
             char win = check_win(table);
             if (win == 'D') {
@@ -222,7 +223,7 @@ void task_keyboardevents(void *arg)
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 void coro_ttt(int times)
 {
-    // rounds = times;
+    rounds = times;
     srand(time(NULL));
     memset(table, ' ', N_GRIDS);
     negamax_init();
@@ -239,4 +240,5 @@ void coro_ttt(int times)
     schedule();
     print_moves();
     move_count = 0;
+    roundend = false;
 }

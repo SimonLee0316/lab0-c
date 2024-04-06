@@ -1224,8 +1224,9 @@ static bool do_coro_ttt(int argc, char *argv[])
             return false;
         }
     }
-
-    coro_ttt(times);
+    for (int i = 0; i < times; i++) {
+        coro_ttt(times);
+    }
     return 0;
 }
 
