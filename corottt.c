@@ -227,12 +227,15 @@ void coro_ttt(int times)
     srand(time(NULL));
     memset(table, ' ', N_GRIDS);
     negamax_init();
-    void (*registered_task[])(void *) = {task_ai1, task_ai2,
-                                         task_keyboardevents};
+    void (*registered_task[])(void *) = {
+        task_keyboardevents,
+        task_ai1,
+        task_ai2,
+    };
     struct arg arg0 = {.task_name = "task_ai1"};
     struct arg arg1 = {.task_name = "task_ai2"};
     struct arg arg2 = {.task_name = "task_keyboardevents"};
-    struct arg registered_arg[] = {arg0, arg1, arg2};
+    struct arg registered_arg[] = {arg2, arg0, arg1};
     tasks = registered_task;
     args = registered_arg;
     ntasks = ARRAY_SIZE(registered_task);
