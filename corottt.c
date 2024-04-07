@@ -110,7 +110,7 @@ void task_ai1(void *arg)
 
     task = cur_task;
 
-    if (rounds <= 0) {
+    if (rounds <= 0) {  // if games rounds is end
         longjmp(sched, 1);
     }
 
@@ -172,28 +172,28 @@ void task_drawboard_checkwin(void *arg)
     }
     task = cur_task;
 
-    if (rounds <= 0) {
+    if (rounds <= 0) {  // if games rounds is end
         longjmp(sched, 1);
     }
 
     char win = check_win(table);
     if (win == 'D') {
         printf("It is a draw!\n");
-        roundend = true;
+        roundend = true;  // current games is end
         rounds--;
     } else if (win != ' ') {
         printf("%c won!\n", win);
         roundend = true;
         rounds--;
     }
-    if (!stop) {
+    if (!stop) {  // if press ctr+p stop display table
         draw_board(table);
     }
 
     if (rounds > 0) {
         task_add(task);
     }
-    if (roundend) {
+    if (roundend) {  // current games is end,reset the game
         print_moves();
         move_count = 0;
         memset(table, ' ', N_GRIDS);
@@ -223,10 +223,10 @@ void task_keyboardevents(void *arg)
 
     char c;
     if (read(STDIN_FILENO, &c, 1) == 1) {
-        if (c == 16) {
-            stop = !stop;
-        } else if (c == 17) {
-            rounds = 0;
+        if (c == 16) {         // ctr+p
+            stop = !stop;      // stop or resume
+        } else if (c == 17) {  // ctr+q
+            rounds = 0;        // set rounds to 0 represent the games is over
         }
     }
 
