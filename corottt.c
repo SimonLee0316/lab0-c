@@ -134,8 +134,6 @@ void task_ai2(void *arg)
     task->task_name[sizeof(task->task_name) - 1] = '\0';
     INIT_LIST_HEAD(&task->list);
 
-    // printf("taskname: %s\n", task->task_name);
-
     if (setjmp(task->env) == 0) {
         task_add(task);
         longjmp(sched, 1);
