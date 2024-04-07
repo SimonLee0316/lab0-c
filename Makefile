@@ -51,6 +51,8 @@ qtest: $(OBJS)
 	$(VECHO) "  LD\t$@\n"
 	$(Q)$(CC) $(LDFLAGS) -o $@ $^ -lm
 
+corottt.o: CFLAGS := $(filter-out -O1,$(CFLAGS)) -O0
+
 %.o: %.c
 	@mkdir -p .$(DUT_DIR)
 	@mkdir -p .$(AGNT_DIR)

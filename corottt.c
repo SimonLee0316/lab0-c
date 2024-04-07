@@ -1,11 +1,14 @@
 #include "corottt.h"
 
+#include <fcntl.h>
 #include <setjmp.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <termios.h>
+#include <unistd.h>
 #include "list.h"
 
 #include "agents/mcts.h"
@@ -40,6 +43,8 @@ static struct task *cur_task;
 static bool roundend = false;
 static int rounds;
 static char table[N_GRIDS];
+static int i;
+static bool stop = false;
 
 static void record_move(int move)
 {
@@ -68,7 +73,6 @@ static void task_switch()
 {
     if (!list_empty(&tasklist)) {
         struct task *t = list_first_entry(&tasklist, struct task, list);
-        printf("taskswitch del:%s\n", t->task_name);
         list_del(&t->list);
         cur_task = t;
         longjmp(t->env, 1);
@@ -77,15 +81,11 @@ static void task_switch()
 
 void schedule(void)
 {
-    static int i;
-    // int j=0;
+    i = 0;
     setjmp(sched);
     while (ntasks-- > 0) {
-        // printf("schetime %d ntasks:%d\n",j++,ntasks);
-        i = (i + 1) % 3;
-        printf("schedule i:%d\n", i);
         struct arg arg = args[i];
-        tasks[i](&arg);
+        tasks[i++](&arg);
         printf("Never reached\n");
     }
 
@@ -102,7 +102,6 @@ void task_ai1(void *arg)
 
     INIT_LIST_HEAD(&task->list);
 
-    // printf("taskname: %s\n", task->task_name);
 
     if (setjmp(task->env) == 0) {
         task_add(task);
@@ -110,38 +109,20 @@ void task_ai1(void *arg)
     }
 
     task = cur_task;
-    char ai = 'X';
-    while (1) {
-        if (setjmp(task->env) == 0) {
-            if (roundend) {
-                break;
-            }
-            char win = check_win(table);
-            if (win == 'D') {
-                draw_board(table);
-                printf("It is a draw!\n");
-                break;
-            } else if (win != ' ') {
-                draw_board(table);
-                printf("%c won!\n", win);
-                break;
-            }
-            int move = mcts(table, ai);
-            if (move != -1) {
-                table[move] = ai;
-                record_move(move);
-            }
-            draw_board(table);
-            task_add(task);
-            task_switch();
-        }
 
-        task = cur_task;
-        // printf("%s: resume\n", task->task_name);
+    if (rounds <= 0) {
+        longjmp(sched, 1);
     }
-    roundend = true;
-    printf("%s: complete\n", task->task_name);
-    longjmp(sched, 1);
+
+    char ai = 'X';
+    int move = mcts(table, ai);
+    if (move != -1) {
+        table[move] = ai;
+        record_move(move);
+    }
+
+    task_add(task);
+    task_switch();
 }
 
 void task_ai2(void *arg)
@@ -161,40 +142,66 @@ void task_ai2(void *arg)
     }
 
     task = cur_task;
-    char ai = 'O';
-    while (1) {
-        if (setjmp(task->env) == 0) {
-            if (roundend) {
-                break;
-            }
-            char win = check_win(table);
-            if (win == 'D') {
-                draw_board(table);
-                printf("It is a draw!\n");
-                break;
-            } else if (win != ' ') {
-                draw_board(table);
-                printf("%c won!\n", win);
-                break;
-            }
-            int move = negamax_predict(table, ai).move;
-            if (move != -1) {
-                table[move] = ai;
-                record_move(move);
-            }
-            draw_board(table);
-            task_add(task);
-            task_switch();
-        }
 
-        task = cur_task;
-        // printf("%s: resume\n", task->task_name);
+    if (rounds <= 0) {
+        longjmp(sched, 1);
     }
-    roundend = true;
-    printf("%s: complete\n", task->task_name);
-    longjmp(sched, 1);
+    char ai = 'O';
+    int move = negamax_predict(table, ai).move;
+    if (move != -1) {
+        table[move] = ai;
+        record_move(move);
+    }
+
+    task_add(task);
+    task_switch();
 }
 
+void task_drawboard_checkwin(void *arg)
+{
+    struct task *task = malloc(sizeof(struct task));
+
+    strncpy(task->task_name, ((struct arg *) arg)->task_name,
+            sizeof(task->task_name) - 1);
+    task->task_name[sizeof(task->task_name) - 1] = '\0';
+    INIT_LIST_HEAD(&task->list);
+
+    if (setjmp(task->env) == 0) {
+        task_add(task);
+        longjmp(sched, 1);
+    }
+    task = cur_task;
+
+    if (rounds <= 0) {
+        longjmp(sched, 1);
+    }
+
+    char win = check_win(table);
+    if (win == 'D') {
+        printf("It is a draw!\n");
+        roundend = true;
+        rounds--;
+    } else if (win != ' ') {
+        printf("%c won!\n", win);
+        roundend = true;
+        rounds--;
+    }
+    if (!stop) {
+        draw_board(table);
+    }
+
+    if (rounds > 0) {
+        task_add(task);
+    }
+    if (roundend) {
+        print_moves();
+        move_count = 0;
+        memset(table, ' ', N_GRIDS);
+        roundend = false;
+    }
+
+    task_switch();
+}
 
 void task_keyboardevents(void *arg)
 {
@@ -205,20 +212,67 @@ void task_keyboardevents(void *arg)
     task->task_name[sizeof(task->task_name) - 1] = '\0';
     INIT_LIST_HEAD(&task->list);
 
-    // printf("taskname %s\n", task->task_name);
-
     if (setjmp(task->env) == 0) {
         task_add(task);
         longjmp(sched, 1);
     }
-
     task = cur_task;
+    if (rounds <= 0) {
+        longjmp(sched, 1);
+    }
 
+    char c;
+    if (read(STDIN_FILENO, &c, 1) == 1) {
+        if (c == 16) {
+            stop = !stop;
+        } else if (c == 17) {
+            rounds = 0;
+        }
+    }
 
+    if (rounds > 0) {
+        task_add(task);
+    }
+    if (roundend) {
+        move_count = 0;
+        memset(table, ' ', N_GRIDS);
+        roundend = false;
+    }
 
-    printf("%s: complete\n", task->task_name);
-    longjmp(sched, 1);
+    task_switch();
 }
+
+
+
+/* Enable raw input mode */
+void enableRawInputMode()
+{
+    struct termios raw;
+    tcgetattr(STDIN_FILENO, &raw);
+
+    raw.c_lflag &= ~(ECHO | ICANON);
+    raw.c_iflag &= ~(IXON);
+
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+
+    fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
+}
+
+/* disable raw input mode */
+void disableRawInputMode()
+{
+    struct termios term;
+    tcgetattr(STDIN_FILENO, &term);
+
+    term.c_lflag |= (ECHO | ICANON);
+    term.c_iflag |= (IXON);
+
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &term);
+
+    fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) & ~O_NONBLOCK);
+}
+
+
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 void coro_ttt(int times)
@@ -227,21 +281,24 @@ void coro_ttt(int times)
     srand(time(NULL));
     memset(table, ' ', N_GRIDS);
     negamax_init();
-    void (*registered_task[])(void *) = {
-        task_keyboardevents,
-        task_ai1,
-        task_ai2,
+    void (*registered_task[])(void *) = {task_ai1,
+                                         task_keyboardevents,
+                                         task_ai2,
+                                         task_keyboardevents,
+                                         task_drawboard_checkwin,
+                                         task_keyboardevents
+
     };
     struct arg arg0 = {.task_name = "task_ai1"};
     struct arg arg1 = {.task_name = "task_ai2"};
-    struct arg arg2 = {.task_name = "task_keyboardevents"};
-    struct arg registered_arg[] = {arg2, arg0, arg1};
+    struct arg arg2 = {.task_name = "task_drawboard_checkwin"};
+    struct arg arg3 = {.task_name = "task_keyboardevents"};
+    struct arg registered_arg[] = {arg0, arg3, arg1, arg3, arg2, arg3};
     tasks = registered_task;
     args = registered_arg;
     ntasks = ARRAY_SIZE(registered_task);
 
+    enableRawInputMode();
     schedule();
-    print_moves();
-    move_count = 0;
-    roundend = false;
+    disableRawInputMode();
 }
